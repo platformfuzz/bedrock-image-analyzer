@@ -1,0 +1,10 @@
+tests/
+.github/
+.kiro/
+.gitignore
+requirements-dev.txt
+README.md
+LICENSE
+.hypothesis/
+__pycache__/
+.ruff_cache/
