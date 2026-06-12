@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_MODEL_ID = "anthropic.claude-3-sonnet-20240229-v1:0"
 DEFAULT_MAX_TOKENS = 1024
+INFERENCE_PROFILE_PREFIXES = ("global.", "us.", "eu.", "au.", "apac.", "jp.")
 
 MODEL_ID = os.environ.get("MODEL_ID", DEFAULT_MODEL_ID)
 MAX_TOKENS = int(os.environ.get("MAX_TOKENS", str(DEFAULT_MAX_TOKENS)))
@@ -80,6 +81,11 @@ def _model_region_error_message() -> str:
     )
 
 
+def _is_inference_profile_id(model_id: str) -> bool:
+    """Return True when MODEL_ID is a Bedrock inference profile (e.g. au.*, global.*)."""
+    return model_id.startswith(INFERENCE_PROFILE_PREFIXES)
+
+
 def validate_model_availability() -> None:
     """Verify MODEL_ID is available in the current AWS region.
 
@@ -89,7 +95,10 @@ def validate_model_availability() -> None:
     region = _get_aws_region()
     control_client = boto3.client("bedrock", region_name=region)
     try:
-        control_client.get_foundation_model(modelIdentifier=MODEL_ID)
+        if _is_inference_profile_id(MODEL_ID):
+            control_client.get_inference_profile(inferenceProfileIdentifier=MODEL_ID)
+        else:
+            control_client.get_foundation_model(modelIdentifier=MODEL_ID)
     except ClientError as exc:
         error = exc.response.get("Error", {})
         code = error.get("Code", "")
