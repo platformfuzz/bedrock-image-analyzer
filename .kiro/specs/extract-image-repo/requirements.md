@@ -2,12 +2,12 @@
 
 ## Introduction
 
-Extract the containerized FastAPI application from the `terraform-aws-ecs-express-mode-demo` repository into a standalone repository (`platformfuzz/bedrock-image-analyzer-image`). The new repository will be a fully self-contained container image project with its own CI workflows, tests, documentation, and Kiro configuration. The original Terraform repository will be updated to remove the embedded application code and Docker build resource, referencing the externally-built image instead.
+Extract the containerized FastAPI application from the `terraform-aws-ecs-express-mode-demo` repository into a standalone repository (`platformfuzz/bedrock-image-analyzer`). The new repository will be a fully self-contained container image project with its own CI workflows, tests, documentation, and Kiro configuration. The original Terraform repository will be updated to remove the embedded application code and Docker build resource, referencing the externally-built image instead.
 
 ## Glossary
 
 - **Source_Repo**: The existing repository at `/home/johna/workspace/jajera/terraform-aws-ecs-express-mode-demo` containing Terraform infrastructure and the embedded container application
-- **Target_Repo**: The new standalone repository at `~/workspace/platformfuzz/bedrock-image-analyzer-image` containing only the container application
+- **Target_Repo**: The new standalone repository at `~/workspace/platformfuzz/bedrock-image-analyzer` containing only the container application
 - **Container_App**: The FastAPI Python application that provides image analysis via Amazon Bedrock Claude
 - **CI_Workflow**: A GitHub Actions workflow file that automates linting, testing, or building
 - **Reusable_Workflow**: A workflow from the `actionsforge/actions` repository called via the `uses` directive

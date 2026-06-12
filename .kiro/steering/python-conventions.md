@@ -12,6 +12,15 @@
 - **Pydantic** BaseModel for request/response validation
 - **boto3** for AWS Bedrock client
 - **uvicorn** as the ASGI server
+- **`asynccontextmanager`** lifespan for startup validation hooks
+
+## Application Patterns
+
+- Module-level client instances (e.g., `bedrock_client = boto3.client(...)`)
+- Environment variable configuration with defaults via `os.environ.get()`
+- FastAPI lifespan context manager for startup checks (model availability validation)
+- Helper functions prefixed with `_` for internal logic
+- `JSONResponse` for non-2xx responses with custom status codes
 
 ## Coding Standards
 
@@ -33,8 +42,9 @@
 - **Hypothesis** for property-based tests (min 100 examples per property)
 - **FastAPI TestClient** for HTTP endpoint testing
 - Mock external services (Bedrock) using `unittest.mock.patch`
-- Patch target is `main.bedrock_client` (module-level client instance)
+- Patch targets: `main.bedrock_client` and `main.validate_model_availability`
 - Tests organized by behavior, not by function
+- `conftest.py` sets `AWS_DEFAULT_REGION` env var before app import
 
 ## Linting
 
@@ -49,4 +59,12 @@
 - Layer optimization: COPY requirements.txt and pip install before COPY . .
 - Expose port 8000
 - CMD uses uvicorn with explicit host 0.0.0.0
-- `.dockerignore` excludes tests, CI, and dev files from the image
+- `.dockerignore` excludes tests, CI, dev files, LICENSE, and cache directories from the image
+
+## CI/CD Workflows
+
+- `python-lint-test.yml` — Local workflow: ruff check + pytest (Python 3.14)
+- `build-and-release.yml` — Docker build + push to GHCR on main/tags; GitHub Release on tag
+- `ci.yml` — Docker build (no push) on PRs to validate Dockerfile
+- `commitmsg-conform.yml` — Reusable workflow from actionsforge/actions
+- `markdown-lint.yml` — Reusable workflow from actionsforge/actions

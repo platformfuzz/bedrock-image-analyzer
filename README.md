@@ -1,4 +1,6 @@
-# bedrock-image-analyzer-image
+# bedrock-image-analyzer
+
+[![Build and Release](https://github.com/platformfuzz/bedrock-image-analyzer/actions/workflows/build-and-release.yml/badge.svg)](https://github.com/platformfuzz/bedrock-image-analyzer/actions/workflows/build-and-release.yml)
 
 AI-powered image analysis container using Amazon Bedrock Claude.
 

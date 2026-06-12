@@ -39,7 +39,10 @@ def client(mock_bedrock_client):
     Patches the module-level bedrock_client in main so that tests
     do not require real AWS credentials or network access.
     """
-    with patch("main.bedrock_client", mock_bedrock_client):
+    with (
+        patch("main.bedrock_client", mock_bedrock_client),
+        patch("main.validate_model_availability"),
+    ):
         from main import app
 
         with TestClient(app) as test_client:
