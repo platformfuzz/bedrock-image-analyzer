@@ -1,7 +1,9 @@
 """Property-based tests for the container application."""
 
 import string
+from unittest.mock import MagicMock, patch
 
+import pytest
 from hypothesis import given, settings, HealthCheck
 from hypothesis import strategies as st
 
@@ -99,3 +101,61 @@ class TestInvalidUrlRejection:
 
         # Bedrock client must NOT have been invoked
         mock_bedrock_client.invoke_model.assert_not_called()
+
+
+class TestModelValidation:
+    """Startup validation must accept inference profile IDs as well as foundation models."""
+
+    def test_validate_model_availability_uses_inference_profile_api(self):
+        mock_control = MagicMock()
+        with (
+            patch("main.MODEL_ID", "au.anthropic.claude-sonnet-4-6"),
+            patch("main._get_aws_region", return_value="ap-southeast-2"),
+            patch("main.boto3.client", return_value=mock_control),
+        ):
+            from main import validate_model_availability
+
+            validate_model_availability()
+
+        mock_control.get_inference_profile.assert_called_once_with(
+            inferenceProfileIdentifier="au.anthropic.claude-sonnet-4-6"
+        )
+        mock_control.get_foundation_model.assert_not_called()
+
+    def test_validate_model_availability_uses_foundation_model_api(self):
+        mock_control = MagicMock()
+        with (
+            patch("main.MODEL_ID", "anthropic.claude-3-sonnet-20240229-v1:0"),
+            patch("main._get_aws_region", return_value="ap-southeast-2"),
+            patch("main.boto3.client", return_value=mock_control),
+        ):
+            from main import validate_model_availability
+
+            validate_model_availability()
+
+        mock_control.get_foundation_model.assert_called_once_with(
+            modelIdentifier="anthropic.claude-3-sonnet-20240229-v1:0"
+        )
+        mock_control.get_inference_profile.assert_not_called()
+
+    def test_validate_model_availability_raises_for_missing_inference_profile(self):
+        mock_control = MagicMock()
+        mock_control.get_inference_profile.side_effect = __import__("botocore").exceptions.ClientError(
+            {
+                "Error": {
+                    "Code": "ResourceNotFoundException",
+                    "Message": "Inference profile not found",
+                }
+            },
+            "GetInferenceProfile",
+        )
+
+        with (
+            patch("main.MODEL_ID", "au.anthropic.claude-sonnet-4-6"),
+            patch("main._get_aws_region", return_value="ap-southeast-2"),
+            patch("main.boto3.client", return_value=mock_control),
+        ):
+            from main import validate_model_availability
+
+            with pytest.raises(RuntimeError, match="not available in AWS region"):
+                validate_model_availability()
