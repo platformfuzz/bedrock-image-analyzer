@@ -2,7 +2,7 @@
 
 ## Overview
 
-Extract the containerized FastAPI application from the source Terraform repository into this standalone repository (`bedrock-image-analyzer-image`). Create all application files, tests, CI workflows, Kiro configuration, and documentation. Then clean up the source repository by removing the embedded application code.
+Extract the containerized FastAPI application from the source Terraform repository into this standalone repository (`bedrock-image-analyzer`). Create all application files, tests, CI workflows, Kiro configuration, and documentation. Then clean up the source repository by removing the embedded application code.
 
 ## Tasks
 

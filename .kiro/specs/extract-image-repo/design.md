@@ -2,16 +2,16 @@
 
 ## Overview
 
-This design describes extracting the container application (FastAPI image analyzer) from the monolithic Terraform repository (`terraform-aws-ecs-express-mode-demo`) into a dedicated standalone repository (`bedrock-image-analyzer-image`). The new repository is focused solely on the container image: its source code, tests, CI linting, and Kiro steering files. The Terraform repo retains all infrastructure code but removes the application source and app-related tests.
+This design describes extracting the container application (FastAPI image analyzer) from the monolithic Terraform repository (`terraform-aws-ecs-express-mode-demo`) into a dedicated standalone repository (`bedrock-image-analyzer`). The new repository is focused solely on the container image: its source code, tests, CI linting, and Kiro steering files. The Terraform repo retains all infrastructure code but removes the application source and app-related tests.
 
 ---
 
 ## 1. Target Repository File Layout
 
-The `bedrock-image-analyzer-image` repository uses a flat layout with application files at the repo root (not nested in an `app/` subdirectory). This matches the Dockerfile's `WORKDIR /app` + `COPY . .` pattern — the Docker build context is the repo root.
+The `bedrock-image-analyzer` repository uses a flat layout with application files at the repo root (not nested in an `app/` subdirectory). This matches the Dockerfile's `WORKDIR /app` + `COPY . .` pattern — the Docker build context is the repo root.
 
 ```text
-bedrock-image-analyzer-image/
+bedrock-image-analyzer/
 ├── main.py                         # FastAPI application (from app/main.py)
 ├── requirements.txt                # Runtime dependencies (from app/requirements.txt)
 ├── requirements-dev.txt            # Test/lint dependencies (new)
