@@ -97,7 +97,13 @@ def _fetch_image(image_url: str) -> tuple[str, str]:
     """
     try:
         with httpx.Client(follow_redirects=True, timeout=IMAGE_FETCH_TIMEOUT_SECONDS) as client:
-            response = client.get(image_url)
+            response = client.get(
+                image_url,
+                headers={
+                    "User-Agent": "bedrock-image-analyzer/1.0",
+                    "Accept": "image/*",
+                },
+            )
             response.raise_for_status()
     except httpx.HTTPError as exc:
         raise ValueError(f"Failed to fetch image: {exc}") from exc
