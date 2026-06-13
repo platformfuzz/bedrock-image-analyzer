@@ -1,5 +1,6 @@
 """Property-based tests for the container application."""
 
+import json
 import string
 from unittest.mock import MagicMock, patch
 
@@ -100,6 +101,46 @@ class TestInvalidUrlRejection:
         assert len(body["detail"]) > 0, "Expected non-empty 'detail' field in 422 response"
 
         # Bedrock client must NOT have been invoked
+        mock_bedrock_client.invoke_model.assert_not_called()
+
+
+class TestAnalyzeImagePayload:
+    """Bedrock requests must use base64 image sources, not URLs."""
+
+    def test_analyze_sends_base64_image_to_bedrock(self, client, mock_bedrock_client):
+        with patch(
+            "main._fetch_image",
+            return_value=("image/png", "base64-encoded-image-data"),
+        ):
+            response = client.post(
+                "/analyze",
+                json={"image_url": "https://example.com/image.png"},
+            )
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["image_url"] == "https://example.com/image.png"
+        assert body["description"]
+
+        invoke_kwargs = mock_bedrock_client.invoke_model.call_args.kwargs
+        request_body = json.loads(invoke_kwargs["body"])
+        image_block = request_body["messages"][0]["content"][0]
+        assert image_block["type"] == "image"
+        assert image_block["source"] == {
+            "type": "base64",
+            "media_type": "image/png",
+            "data": "base64-encoded-image-data",
+        }
+
+    def test_analyze_returns_422_when_image_fetch_fails(self, client, mock_bedrock_client):
+        with patch("main._fetch_image", side_effect=ValueError("Failed to fetch image: 404")):
+            response = client.post(
+                "/analyze",
+                json={"image_url": "https://example.com/missing.png"},
+            )
+
+        assert response.status_code == 422
+        assert "Failed to fetch image" in response.json()["error"]
         mock_bedrock_client.invoke_model.assert_not_called()
 
 

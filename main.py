@@ -1,11 +1,13 @@
 """FastAPI application for AI-powered image analysis using Amazon Bedrock."""
 
+import base64
 import json
 import logging
 import os
 from contextlib import asynccontextmanager
 
 import boto3
+import httpx
 from botocore.exceptions import ClientError
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
@@ -19,6 +21,8 @@ INFERENCE_PROFILE_PREFIXES = ("global.", "us.", "eu.", "au.", "apac.", "jp.")
 
 MODEL_ID = os.environ.get("MODEL_ID", DEFAULT_MODEL_ID)
 MAX_TOKENS = int(os.environ.get("MAX_TOKENS", str(DEFAULT_MAX_TOKENS)))
+MAX_IMAGE_BYTES = int(os.environ.get("MAX_IMAGE_BYTES", str(5 * 1024 * 1024)))
+IMAGE_FETCH_TIMEOUT_SECONDS = float(os.environ.get("IMAGE_FETCH_TIMEOUT_SECONDS", "30"))
 
 bedrock_client = boto3.client("bedrock-runtime")
 
@@ -86,6 +90,31 @@ def _is_inference_profile_id(model_id: str) -> bool:
     return model_id.startswith(INFERENCE_PROFILE_PREFIXES)
 
 
+def _fetch_image(image_url: str) -> tuple[str, str]:
+    """Download an image and return its media type and base64-encoded bytes.
+
+    Bedrock Claude models require base64 image sources; URL sources are not supported.
+    """
+    try:
+        with httpx.Client(follow_redirects=True, timeout=IMAGE_FETCH_TIMEOUT_SECONDS) as client:
+            response = client.get(image_url)
+            response.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise ValueError(f"Failed to fetch image: {exc}") from exc
+
+    content_type = response.headers.get("content-type", "").split(";")[0].strip().lower()
+    if not content_type.startswith("image/"):
+        raise ValueError(
+            f"URL did not return an image (content-type: {content_type or 'unknown'})"
+        )
+
+    if len(response.content) > MAX_IMAGE_BYTES:
+        raise ValueError(f"Image exceeds maximum size of {MAX_IMAGE_BYTES} bytes")
+
+    image_b64 = base64.standard_b64encode(response.content).decode("ascii")
+    return content_type, image_b64
+
+
 def validate_model_availability() -> None:
     """Verify MODEL_ID is available in the current AWS region.
 
@@ -141,6 +170,14 @@ def analyze(request: AnalyzeRequest) -> AnalyzeResponse | JSONResponse:
     image_url = str(request.image_url)
 
     try:
+        media_type, image_b64 = _fetch_image(image_url)
+    except ValueError as exc:
+        return JSONResponse(
+            status_code=422,
+            content={"error": str(exc)},
+        )
+
+    try:
         body = json.dumps(
             {
                 "anthropic_version": "bedrock-2023-05-31",
@@ -152,8 +189,9 @@ def analyze(request: AnalyzeRequest) -> AnalyzeResponse | JSONResponse:
                             {
                                 "type": "image",
                                 "source": {
-                                    "type": "url",
-                                    "url": image_url,
+                                    "type": "base64",
+                                    "media_type": media_type,
+                                    "data": image_b64,
                                 },
                             },
                             {

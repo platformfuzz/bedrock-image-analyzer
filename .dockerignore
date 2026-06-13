@@ -8,3 +8,4 @@ LICENSE
 .hypothesis/
 __pycache__/
 .ruff_cache/
+.venv/
