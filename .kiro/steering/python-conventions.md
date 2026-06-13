@@ -21,6 +21,7 @@
 - FastAPI lifespan context manager for startup checks (model availability validation)
 - Helper functions prefixed with `_` for internal logic
 - `JSONResponse` for non-2xx responses with custom status codes
+- Prefix-based dispatch for Bedrock API selection (inference profiles vs foundation models)
 
 ## Coding Standards
 
@@ -42,9 +43,10 @@
 - **Hypothesis** for property-based tests (min 100 examples per property)
 - **FastAPI TestClient** for HTTP endpoint testing
 - Mock external services (Bedrock) using `unittest.mock.patch`
-- Patch targets: `main.bedrock_client` and `main.validate_model_availability`
+- Patch targets: `main.bedrock_client`, `main.validate_model_availability`, `main.MODEL_ID`, `main._get_aws_region`, `main.boto3.client`
 - Tests organized by behavior, not by function
 - `conftest.py` sets `AWS_DEFAULT_REGION` env var before app import
+- Unit tests for startup validation cover both foundation model and inference profile code paths
 
 ## Linting
 

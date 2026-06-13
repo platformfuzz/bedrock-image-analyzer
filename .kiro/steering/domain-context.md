@@ -29,7 +29,7 @@ The container runs a Python FastAPI application that:
 
 ## Configuration
 
-- `MODEL_ID` environment variable — Bedrock model identifier (default: `anthropic.claude-3-sonnet-20240229-v1:0`)
+- `MODEL_ID` environment variable — Bedrock model identifier or inference profile ID (default: `anthropic.claude-3-sonnet-20240229-v1:0`). Supports inference profile prefixes: `global.`, `us.`, `eu.`, `au.`, `apac.`, `jp.`
 - `MAX_TOKENS` environment variable — Maximum tokens for model response (default: `1024`)
 - `AWS_DEFAULT_REGION` — AWS region for Bedrock calls (resolved from boto3 session or environment)
 
@@ -37,11 +37,15 @@ The container runs a Python FastAPI application that:
 
 The app uses a FastAPI lifespan context manager to validate model availability before serving requests. If the configured `MODEL_ID` is not available in the current AWS region, the app fails to start with a descriptive `RuntimeError`.
 
+Validation supports two model ID formats:
+- **Foundation models** (e.g., `anthropic.claude-3-sonnet-20240229-v1:0`) — validated via `get_foundation_model`
+- **Inference profiles** (prefixed with `global.`, `us.`, `eu.`, `au.`, `apac.`, `jp.`) — validated via `get_inference_profile`
+
 ## Runtime Environment
 
 - Container runs on AWS ECS Fargate (infrastructure in separate repo)
 - Requires AWS credentials with `bedrock:InvokeModel` permission
-- Model and region validated at startup via `bedrock:GetFoundationModel`
+- Model and region validated at startup via `bedrock:GetFoundationModel` or `bedrock:GetInferenceProfile`
 - Listens on port 8000 via uvicorn
 
 ## CI/CD Pipelines
