@@ -8,20 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: false
-          tags: bedrock-image-analyzer:test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+    uses: actionsforge/actions/.github/workflows/docker-image-validate.yml@main
+    with:
+      image-tag: "bedrock-image-analyzer:test"
+      scan-enabled: false
